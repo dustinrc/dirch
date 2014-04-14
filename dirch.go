@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"github.com/dustin/go-humanize"
 	"os"
 	"path/filepath"
 	"sort"
@@ -14,7 +15,7 @@ type CountSize struct {
 }
 
 func (cs *CountSize) String() string {
-	return fmt.Sprintf("%d total, %dB", cs.count, cs.size)
+	return fmt.Sprintf("%d total, %s", cs.count, humanize.Bytes(uint64(cs.size)))
 }
 
 type FileDirCount struct {
