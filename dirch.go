@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"github.com/daviddengcn/go-villa"
 	"github.com/dustin/go-humanize"
 	"os"
 	"path/filepath"
@@ -67,12 +68,58 @@ func (ecs ExtensionCountSize) Count(path string, info os.FileInfo, err error) er
 	return nil
 }
 
-func (ecs ExtensionCountSize) String() string {
+func (ecs ExtensionCountSize) SortBy(value string) []string {
 	var keys []string
+	var sortFn func([]string)
 	for k := range ecs {
 		keys = append(keys, k)
 	}
-	sort.Strings(keys)
+	switch value {
+	default:
+		sortFn = sort.Strings
+	case "count":
+		sortFn = func(keys []string) {
+			villa.SortF(
+				len(keys),
+				// need to order secondly by key
+				func(i, j int) bool { return ecs[keys[i]].count > ecs[keys[j]].count },
+				func(i, j int) { keys[i], keys[j] = keys[j], keys[i] },
+			)
+		}
+	case "count<":
+		sortFn = func(keys []string) {
+			villa.SortF(
+				len(keys),
+				// need to order secondly by key
+				func(i, j int) bool { return ecs[keys[i]].count < ecs[keys[j]].count },
+				func(i, j int) { keys[i], keys[j] = keys[j], keys[i] },
+			)
+		}
+	case "size":
+		sortFn = func(keys []string) {
+			villa.SortF(
+				len(keys),
+				// need to order secondly by key
+				func(i, j int) bool { return ecs[keys[i]].size > ecs[keys[j]].size },
+				func(i, j int) { keys[i], keys[j] = keys[j], keys[i] },
+			)
+		}
+	case "size<":
+		sortFn = func(keys []string) {
+			villa.SortF(
+				len(keys),
+				// need to order secondly by key
+				func(i, j int) bool { return ecs[keys[i]].size < ecs[keys[j]].size },
+				func(i, j int) { keys[i], keys[j] = keys[j], keys[i] },
+			)
+		}
+	}
+	sortFn(keys)
+	return keys
+}
+
+func (ecs ExtensionCountSize) String() string {
+	keys := ecs.SortBy("key")
 	var out []string
 	for _, k := range keys {
 		out = append(out, fmt.Sprintf("%s: %s", k, ecs[k]))
