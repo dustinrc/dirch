@@ -127,6 +127,36 @@ func (ecs ExtensionCountSize) String() string {
 	return strings.Join(out, "\n")
 }
 
+type extInDir struct {
+	ext string
+	dir string
+}
+
+type ExtensionLocation map[extInDir]*CountSize
+
+func (el ExtensionLocation) Count(path string, info os.FileInfo, err error) error {
+	if err != nil {
+		fmt.Fprintln(os.Stderr, err)
+		return err
+	}
+	eid := extInDir{filepath.Ext(path), filepath.Dir(path)}
+	if v, ok := el[eid]; ok {
+		v.count++
+		v.size += info.Size()
+	} else {
+		el[eid] = &CountSize{1, info.Size()}
+	}
+	return nil
+}
+
+func (el ExtensionLocation) String() string {
+	var out []string
+	for k := range el {
+		out = append(out, fmt.Sprintf("%s: %s", k, el[k]))
+	}
+	return strings.Join(out, "\n")
+}
+
 type MultiFuncDispatch struct {
 	fns []filepath.WalkFunc
 }
@@ -145,12 +175,14 @@ func (mfd *MultiFuncDispatch) Dispatch(path string, info os.FileInfo, e error) e
 func main() {
 	fdc := FileDirCount{}
 	ecs := ExtensionCountSize{}
+	el := ExtensionLocation{}
 
 	sought := []filepath.WalkFunc{}
-	sought = append(sought, fdc.Count, ecs.Count)
+	sought = append(sought, fdc.Count, ecs.Count, el.Count)
 	mfd := MultiFuncDispatch{sought}
 
 	filepath.Walk(os.Args[1], mfd.Dispatch)
 	fmt.Println(fdc)
 	fmt.Println(ecs)
+	fmt.Println(el)
 }
