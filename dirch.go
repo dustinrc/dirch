@@ -10,6 +10,22 @@ import (
 	"strings"
 )
 
+const (
+	otherFile = iota
+	regularFile
+	directory
+)
+
+func fileType(info os.FileInfo) int {
+	if info.IsDir() {
+		return directory
+	} else if info.Mode().IsRegular() {
+		return regularFile
+	} else {
+		return otherFile
+	}
+}
+
 type CountSize struct {
 	count int
 	size  int64
@@ -20,7 +36,7 @@ func (cs *CountSize) String() string {
 }
 
 type FileDirCount struct {
-	numFiles, numDirs int
+	regularFiles, otherFiles, directories int
 }
 
 func (fdc *FileDirCount) Count(path string, info os.FileInfo, err error) error {
@@ -28,27 +44,39 @@ func (fdc *FileDirCount) Count(path string, info os.FileInfo, err error) error {
 		fmt.Fprintln(os.Stderr, err)
 		return err
 	}
-	if info.IsDir() {
-		fdc.numDirs++
-	} else {
-		fdc.numFiles++
+
+	switch fileType(info) {
+	case regularFile:
+		fdc.regularFiles++
+	case directory:
+		fdc.directories++
+	case otherFile:
+		fdc.otherFiles++
 	}
+
 	return nil
 }
 
 func (fdc FileDirCount) String() string {
-	var f, d string
-	if fdc.numFiles == 1 {
+	var f, d, o string
+	if fdc.regularFiles == 1 {
 		f = "file"
 	} else {
 		f = "files"
 	}
-	if fdc.numDirs == 1 {
+	if fdc.directories == 1 {
 		d = "directory"
 	} else {
 		d = "directories"
 	}
-	return fmt.Sprintf("%d %s, %d %s", fdc.numFiles, f, fdc.numDirs, d)
+	if fdc.otherFiles == 1 {
+		o = "other"
+	} else {
+		o = "others"
+	}
+	return fmt.Sprintf("%d %s, %d %s, %d %s", fdc.regularFiles, f,
+		fdc.directories, d,
+		fdc.otherFiles, o)
 }
 
 type ExtensionCountSize map[string]*CountSize
