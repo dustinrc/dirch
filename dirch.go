@@ -86,6 +86,11 @@ func (ecs ExtensionCountSize) Count(path string, info os.FileInfo, err error) er
 		fmt.Fprintln(os.Stderr, err)
 		return err
 	}
+
+	if fileType(info) != regularFile {
+		return nil
+	}
+
 	ext := filepath.Ext(path)
 	if v, ok := ecs[ext]; ok {
 		v.count++
@@ -167,6 +172,11 @@ func (el ExtensionLocation) Count(path string, info os.FileInfo, err error) erro
 		fmt.Fprintln(os.Stderr, err)
 		return err
 	}
+
+	if fileType(info) != regularFile {
+		return nil
+	}
+
 	eid := extInDir{filepath.Ext(path), filepath.Dir(path)}
 	if v, ok := el[eid]; ok {
 		v.count++
